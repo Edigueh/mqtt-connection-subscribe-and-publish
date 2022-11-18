@@ -1,17 +1,23 @@
 # python3.6
 
-import random
+import json
 
 from paho.mqtt import client as mqtt_client
 
 
 broker = 'test.mosquitto.org'
 port = 1883
-topic = "Liberato/iotTro/44xx/data"
+topic_r = "Liberato/iotTro/44xx/data"
+topic_w = "Liberato/iotTro/44xx/rply/19000286"
 
-client_id = f'andreh-mqtt-{random.randint(0, 100)}'
-
-
+client_id = 'André Luckmann'
+seq = 0
+matricula = "19000286"
+turma = "4411"
+alarme = ""
+difTemp = 0
+tempExt = 0
+tempInt = 0
 
 def connect_mqtt() -> mqtt_client:
     def on_connect(client, userdata, flags, rc):
@@ -28,9 +34,27 @@ def connect_mqtt() -> mqtt_client:
 
 def subscribe(client: mqtt_client):
     def on_message(client, userdata, msg):
-        print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
+        recado = msg.payload.decode('utf-8')
+        print(f"Received `{recado}` from `{msg.topic}` topic")
 
-    client.subscribe(topic)
+        jsonStr = json.loads(recado)
+        seq = jsonStr["seq"] + 900000
+        tempExt = jsonStr["tempExt"]
+        tempInt = jsonStr["tempInt"]
+        humidade = jsonStr["umidade"]
+
+        if tempExt > tempInt:
+            difTemp = round((tempExt - tempInt),1)
+            alarme = "Está mais quente lá fora e há "
+        else:
+            difTemp = round((tempInt - tempExt),1)
+            alarme = "Está mais frio lá fora e há "
+        if humidade >= 60:
+            alarme += "altas chances de chuva!"
+        else:
+            alarme += "baixas chances de chuva."
+
+    client.subscribe(topic_r)
     client.on_message = on_message
 
 
