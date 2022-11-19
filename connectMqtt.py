@@ -18,7 +18,7 @@ alarme = ""
 difTemp = 0
 tempExt = 0
 tempInt = 0
-
+jsonDict = {}
 def connect_mqtt() -> mqtt_client:
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
@@ -37,11 +37,13 @@ def subscribe(client: mqtt_client):
         recado = msg.payload.decode('utf-8')
         print(f"Received `{recado}` from `{msg.topic}` topic")
 
-        jsonStr = json.loads(recado)
-        seq = jsonStr["seq"] + 900000
-        tempExt = jsonStr["tempExt"]
-        tempInt = jsonStr["tempInt"]
-        humidade = jsonStr["umidade"]
+        jsonDict = json.loads(recado)
+
+
+        seq = jsonDict["seq"] + 900000
+        tempExt = jsonDict["tempExt"]
+        tempInt = jsonDict["tempInt"]
+        humidade = jsonDict["umidade"]
 
         if tempExt > tempInt:
             difTemp = round((tempExt - tempInt),1)
@@ -53,6 +55,13 @@ def subscribe(client: mqtt_client):
             alarme += "altas chances de chuva!"
         else:
             alarme += "baixas chances de chuva."
+    
+        jsonDict["seq"] = seq
+        jsonDict["id"] = client_id
+        jsonDict["matricula"] = matricula
+        jsonDict["turma"] = turma
+        jsonDict["alarme"] = alarme
+        print(jsonDict)
 
     client.subscribe(topic_r)
     client.on_message = on_message
