@@ -10,7 +10,7 @@ port = 1883
 topic_r = "Liberato/iotTro/44xx/data"
 topic_w = "Liberato/iotTro/44xx/rply/19000286"
 
-client_id = 'André Luckmann'
+client_id = 'André Schaidhauer Luckmann'
 seq = 0
 matricula = "19000286"
 turma = "4411"
@@ -19,6 +19,7 @@ difTemp = 0
 tempExt = 0
 tempInt = 0
 jsonDict = {}
+strMsg = ""
 def connect_mqtt() -> mqtt_client:
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
@@ -61,7 +62,9 @@ def subscribe(client: mqtt_client):
         jsonDict["matricula"] = matricula
         jsonDict["turma"] = turma
         jsonDict["alarme"] = alarme
-        print(jsonDict)
+        strMsg = str (jsonDict)
+        tipo = type(strMsg)
+        print(strMsg)
 
     client.subscribe(topic_r)
     client.on_message = on_message
