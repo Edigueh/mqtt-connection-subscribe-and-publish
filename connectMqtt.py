@@ -5,13 +5,18 @@ from paho.mqtt import client as mqtt_client
 
 import json
 import time
+#libs
 
 broker = 'test.mosquitto.org'
 port = 1883
+#broker adress
+
 topic_read = "Liberato/iotTro/44xx/data"
 topic_send = "Liberato/iotTro/44xx/rply/19000286"
 topic_check = "Liberato/iotTro/44xx/ack/19000286"
 topic_error = "Liberato/iotTro/44xx/ack/"
+#topic addresses
+
 client_id = 'André Schaidhauer Luckmann'
 seq = 0
 matricula = 19000286
@@ -24,6 +29,7 @@ jsonDict = {}
 strMsg = ""
 connected = False
 receivedMsg = False
+#variables
 
 def connect_mqtt() -> mqtt_client:
     def on_connect(client, userdata, flags, rc):
@@ -38,6 +44,7 @@ def connect_mqtt() -> mqtt_client:
     client.connect(broker, port)
 
     return client
+#connect function
 
 def subscribe(client: mqtt_client):
     def on_message(client, userdata, msg):
@@ -71,6 +78,10 @@ def subscribe(client: mqtt_client):
             jsonDict["matricula"] = matricula
             jsonDict["turma"] = turma
             jsonDict["alarme"] = alarme
+            jsonDict["difTemp"] = difTemp
+            del jsonDict["tempExt"]
+            del jsonDict["tempInt"]
+            del jsonDict["umidade"]
             strMsg = str(jsonDict)
 
             client.publish(topic_send,strMsg)
@@ -109,4 +120,5 @@ def run():
         print ("exiting")
         client.disconnect()
         client.loop_stop()
+
 run()     
