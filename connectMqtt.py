@@ -3,13 +3,13 @@
 from paho.mqtt import client as mqtt_client
 
 import json
-
+import time
 
 broker = 'test.mosquitto.org'
 port = 1883
 topic_r = "Liberato/iotTro/44xx/data"
-topic_w = "Liberato/iotTro/44xx/rply/19000286"
-
+topic_send = "Liberato/iotTro/44xx/rply/19000286"
+topic_check = "Liberato/iotTro/44xx/ack/19000286"
 client_id = 'André Schaidhauer Luckmann'
 seq = 0
 matricula = "19000286"
@@ -20,10 +20,13 @@ tempExt = 0
 tempInt = 0
 jsonDict = {}
 strMsg = ""
+connected = False
+receivedMsg = False
 def connect_mqtt() -> mqtt_client:
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
             print("Connected to MQTT Broker!")
+            connected = True
         else:
             print("Failed to connect, return code %d\n", rc)
 
@@ -35,44 +38,56 @@ def connect_mqtt() -> mqtt_client:
 
 def subscribe(client: mqtt_client):
     def on_message(client, userdata, msg):
-        recado = msg.payload.decode('utf-8')
-        print(f"Received `{recado}` from `{msg.topic}` topic")
+        if msg.topic == topic_r:
+            recado = msg.payload.decode('utf-8')
+            print(f"Received `{recado}` from `{msg.topic}` topic")
 
-        jsonDict = json.loads(recado)
+            jsonDict = json.loads(recado)
 
 
-        seq = jsonDict["seq"] + 900000
-        tempExt = jsonDict["tempExt"]
-        tempInt = jsonDict["tempInt"]
-        humidade = jsonDict["umidade"]
+            seq = jsonDict["seq"] + 900000
+            tempExt = jsonDict["tempExt"]
+            tempInt = jsonDict["tempInt"]
+            humidade = jsonDict["umidade"]
 
-        if tempExt > tempInt:
-            difTemp = round((tempExt - tempInt),1)
-            alarme = "Está mais quente lá fora e há "
-        else:
-            difTemp = round((tempInt - tempExt),1)
-            alarme = "Está mais frio lá fora e há "
-        if humidade >= 60:
-            alarme += "altas chances de chuva!"
-        else:
-            alarme += "baixas chances de chuva."
-    
-        jsonDict["seq"] = seq
-        jsonDict["id"] = client_id
-        jsonDict["matricula"] = matricula
-        jsonDict["turma"] = turma
-        jsonDict["alarme"] = alarme
-        strMsg = str (jsonDict)
-        tipo = type(strMsg)
-        print(strMsg)
-
-    client.subscribe(topic_r)
+            if tempExt > tempInt:
+                difTemp = round((tempExt - tempInt),1)
+                alarme = "Está mais quente lá fora e há "
+            else:
+                difTemp = round((tempInt - tempExt),1)
+                alarme = "Está mais frio lá fora e há "
+            if humidade >= 60:
+                alarme += "altas chances de chuva!"
+            else:
+                alarme += "baixas chances de chuva."
+            
+            jsonDict["seq"] = seq
+            jsonDict["id"] = client_id
+            jsonDict["matricula"] = matricula
+            jsonDict["turma"] = turma
+            jsonDict["alarme"] = alarme
+            strMsg = str (jsonDict)
+            client.publish(topic_send,strMsg)
+            print(strMsg)
+        if msg.topic == topic_check:
+            def on_message(client, userdata, msg):
+                recado = msg.payload.decode('utf-8')
+                print(f"Received `{recado}` from `{msg.topic}` topic")
+    client.subscribe([(topic_r, 0), (topic_check, 0)])
     client.on_message = on_message
 
 
 def run():
     client = connect_mqtt()
+    client.loop_start()
     subscribe(client)
-    client.loop_forever()
-
+    try:
+        while True:
+            time.sleep(1)
+  
+    except KeyboardInterrupt:
+        print ("exiting")
+        client.disconnect()
+        client.loop_stop()
 run()
+        
